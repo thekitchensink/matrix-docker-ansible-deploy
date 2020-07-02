@@ -1,0 +1,24 @@
+---
+
+- name: Check existence of matrix-registration service
+  stat:
+    path: "/etc/systemd/system/matrix-registration.service"
+  register: matrix_registration_service_stat
+
+- name: Ensure matrix-registration is stopped
+  service:
+    name: matrix-registration
+    state: stopped
+    daemon_reload: yes
+  when: "matrix_registration_service_stat.stat.exists"
+
+- name: Ensure matrix-registration.service doesn't exist
+  file:
+    path: "/etc/systemd/system/matrix-registration.service"
+    state: absent
+  when: "matrix_registration_service_stat.stat.exists"
+
+- name: Ensure systemd reloaded after matrix-registration.service removal
+  service:
+    daemon_reload: yes
+  when: "matrix_registration_service_stat.stat.exists"

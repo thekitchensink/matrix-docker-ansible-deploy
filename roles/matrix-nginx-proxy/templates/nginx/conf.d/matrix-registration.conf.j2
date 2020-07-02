@@ -1,0 +1,17 @@
+#jinja2: lstrip_blocks: "True"
+
+server {
+	gzip on;
+	gzip_types text/plain application/json application/javascript text/css image/x-icon font/ttf image/gif;
+	
+	{% if matrix_registration_enabled %}
+	location ~ ^/(static|register) {
+		proxy_pass http://localhost:5005;
+    }
+	{% if matrix_registration_token_page_enabled %}
+	location /token {
+    	proxy_pass http://localhost:5005;
+	}
+	{% endif %}
+	{% endif %}
+}

@@ -1,0 +1,56 @@
+# ansible lower than 2.8, does not support docker_image build parameters
+# for self buildig it is explicitly needed, so we rather fail here
+- name: Fail if running on Ansible lower than 2.8 and trying self building
+  fail:
+    msg: "To self build Puppet Slack image, you should usa ansible 2.8 or higher. E.g. pip contains such packages."
+  when: "ansible_version.major == 2 and ansible_version.minor < 8 and matrix_registration_container_image_self_build"
+
+- name: Ensure Matrix Registration docker image is pulled
+  docker_image:
+    name: "{{ matrix_registration_docker_image }}"
+    source: "{{ 'pull' if ansible_version.major > 2 or ansible_version.minor > 7 else omit }}"
+    force_source: "{{ matrix_registration_docker_image_force_pull if ansible_version.major > 2 or ansible_version.minor >= 8 else omit }}"
+    force: "{{ omit if ansible_version.major > 2 or ansible_version.minor >= 8 else matrix_registrationd_docker_image_force_pull }}"
+  when: matrix_registration_enabled|bool and not matrix_registration_container_image_self_build
+
+- name: Ensure Matrix Registration repository is present on self build
+  git:
+    repo: https://github.com/thekitchensink/matrix-registration
+    dest: "{{ matrix_registration_docker_src_files_path }}"
+    force: "yes"
+  when: "matrix_registration_enabled|bool and matrix_registration_container_image_self_build"
+
+- debug:
+    msg: "Shared secret is {{ matrix_synapse_registration_shared_secret }}"
+
+- name: Ensures {{matrix_registration}}/conf dir exists
+  file: path={{matrix_registration_config_path}} state=directory
+  when: "matrix_registration_enabled|bool"
+
+- name: Ensure config file generated
+  template:
+    src: "{{ role_path }}/templates/config.yml.j2"
+    dest: "{{ matrix_registration_config_path }}/config.yml"
+    mode: 0640
+  when: "matrix_registration_enabled|bool"
+
+- easy_install:
+    name: pip
+    state: latest
+
+- name: Ensure MX Puppet Discord Docker image is built
+  docker_image:
+    name: "{{ matrix_registration_docker_image }}"
+    source: build
+    build:
+      dockerfile: Dockerfile
+      path: "{{ matrix_registration_docker_src_files_path }}"
+      pull: yes
+  when: "matrix_registration_enabled|bool and matrix_registration_container_image_self_build"
+
+- name: Ensure matrix-registration.service installed
+  template:
+    src: "{{ role_path }}/templates/systemd/matrix-registration.service.j2"
+    dest: "/etc/systemd/system/matrix-registration.service"
+    mode: 0644
+  register: matrix_registration_systemd_service_result

@@ -1,0 +1,12 @@
+matrix_registration_enabled: true
+matrix_registration_token_page_enabled: true
+
+matrix_registration_container_image_self_build: true
+
+matrix_registration_docker_image: "mediocregopher/matrix-registration:latest"
+matrix_registration_docker_image_force_pull: "{{ matrix_registration_docker_image.endswith(':latest') }}"
+
+matrix_registration_base_path: "{{ matrix_base_data_path }}/matrix-registration"
+matrix_registration_config_path: "{{ matrix_registration_base_path }}/config"
+matrix_registration_data_path: "{{ matrix_registration_base_path }}/data"
+matrix_registration_docker_src_files_path: "{{ matrix_registration_base_path }}/docker-src"

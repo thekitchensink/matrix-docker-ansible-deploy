@@ -30,4 +30,5 @@
     - matrix-email2matrix
     - matrix-nginx-proxy
     - matrix-coturn
+    - matrix-registration
     - matrix-common-after
